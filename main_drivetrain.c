@@ -11,5 +11,5 @@ int main(){
     DrivetrainOut_t out = calc_drivetrain(target_ratio, front_cogs, 2,
             rear_cogs, 4);
 
-    printf("f:%d r: %d ratio: %f",out.front, out.rear, out.ratio);
+    printf("f:%d r: %d ratio: %.3f\n",out.front, out.rear, out.ratio);
 }

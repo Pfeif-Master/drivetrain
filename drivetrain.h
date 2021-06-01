@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-const double RATIO_MARGIN_OF_ERROR = 0.000001;
 typedef struct DrivetrainOut{
     double   ratio;
     uint16_t front;

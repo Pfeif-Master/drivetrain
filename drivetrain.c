@@ -3,6 +3,8 @@
 #include "math.h"
 #include "drivetrain.h"
 
+const double RATIO_MARGIN_OF_ERROR = 0.000001;
+
 //=BST=============================================================================
 
 typedef struct Node{
@@ -21,14 +23,16 @@ typedef struct TreeWalker{
     bool success_flag;
 }TreeWalker_t;
 
-Node_t* sarray2bst(uint16_t* array, uint8_t start, u_int8_t end){
+Node_t* sarray2bst(uint16_t* array, int start, int end){
     //base case
-    if(start == end){return NULL;}
+    if(start > end){return NULL;}
 
     //make mid root
-    uint8_t mid =( start + end) / 2;
+    uint8_t mid = (start + end) / 2;
     Node_t* root = malloc(sizeof(Node_t));
     root->data = array[mid];
+    root->rightC = NULL;
+    root->leftC = NULL;
 
     //make right
     root->rightC = sarray2bst(array, mid + 1, end);
@@ -97,8 +101,10 @@ bool find_best_ratio(Node_t* bst, double* const targetRatio, const uint16_t in_c
     //update best
     if(meta.success_flag)
     {
-        //dont need fabs() because of bust rule
-        if((*targetRatio - curBest->ratio) < (*targetRatio - meta.out_ratio)){
+        //dont need fabs() meta because of bust rule
+        //But do need to check that init best is not a bust
+        if(((*targetRatio - curBest->ratio) > (*targetRatio - meta.out_ratio)) ||
+            curBest->ratio > *targetRatio){
             curBest->ratio = meta.out_ratio;
             if(cogISfront){
                 curBest->front = in_cog;
@@ -110,6 +116,8 @@ bool find_best_ratio(Node_t* bst, double* const targetRatio, const uint16_t in_c
             }
         }
     }
+
+    return meta.success_flag;
 }
 
 //=Drivetrain============================================================================
