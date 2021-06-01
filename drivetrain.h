@@ -2,13 +2,15 @@
 #define DRIVETRIAN_H
 
 #include <stdint.h>
+
+const double RATIO_MARGIN_OF_ERROR = 0.000001;
 typedef struct DrivetrainOut{
-    const double   ratio;
-    const uint16_t front;
-    const uint16_t rear;
+    double   ratio;
+    uint16_t front;
+    uint16_t rear;
 }DrivetrainOut_t;
 
-DrivetrainOut_t calc_drivetrain(const double targetRatio,
-       const uint16_t* frontBuff, const uint8_t frontLen,
-       const uint16_t* rearBuff, const uint8_t rearLen);
+DrivetrainOut_t calc_drivetrain(double targetRatio,
+       uint16_t* frontBuff, uint8_t frontLen,
+       uint16_t* rearBuff, uint8_t rearLen);
 #endif

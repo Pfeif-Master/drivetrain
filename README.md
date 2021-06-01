@@ -1,9 +1,20 @@
 # Notes
 - ratio always front / back
 - Going over is a bust
-- some index can be skipped by checking bookends
-- after checking bookends, will also know if should loop up, or down
-- multiple indexes will have a 'match'
-- - ~~thus should loop through the smaller list and then compare champions~~
-- - No, loop through larger index, The inner loop is more likely to generate skips
-- Don't compare champions, keep running best
+
+#assumptions
+- sorted lists
+- no repeats
+
+#links
+BST c  
+https://www.codesdope.com/blog/article/binary-search-tree-in-c/
+
+sorted array into BST  
+https://www.geeksforgeeks.org/sorted-array-to-balanced-bst/
+
+#embedded
+- add return code
+- stack overflow
+- heap
+- better const
