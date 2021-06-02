@@ -78,7 +78,7 @@ void printShift(unsigned int count, uint16_t* f, uint16_t* r){
 }
 
 //front and rear Pos pointers get modified
-void drivetrain_shift(double* const targetRatio,
+double drivetrain_shift(double* const targetRatio,
         uint16_t* frontBuff, uint8_t frontLen,
         uint16_t* rearBuff, uint8_t rearLen,
         uint16_t* frontPos, uint16_t* rearPos){
@@ -91,7 +91,7 @@ void drivetrain_shift(double* const targetRatio,
     //check that ratio was found
     if(!pass){
         printf("Target Ratio Could not be found\nEND");
-        return; //exit early
+        return 0; //exit early
     }
 
     printf("f:%d r: %d ratio: %.3f\n",*out.front, *out.rear, out.ratio);
@@ -116,6 +116,8 @@ void drivetrain_shift(double* const targetRatio,
     }
     //final print
     printShift(count, frontPos, rearPos);
+
+    return out.ratio;
 }
 
 //=Helper Definitions=====================================================================

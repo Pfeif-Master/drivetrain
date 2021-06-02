@@ -18,3 +18,4 @@ https://www.geeksforgeeks.org/sorted-array-to-balanced-bst/
 - stack overflow
 - heap
 - better const
+- add #define for no colors
