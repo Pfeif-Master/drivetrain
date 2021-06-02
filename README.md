@@ -3,7 +3,7 @@
 - Going over is a bust
 
 #assumptions
-- sorted lists
+- sorted lists decending
 - no repeats
 
 #links

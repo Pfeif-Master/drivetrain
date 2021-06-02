@@ -90,7 +90,7 @@ double drivetrain_shift(double* const targetRatio,
 
     //check that ratio was found
     if(!pass){
-        printf("Target Ratio Could not be found\nEND");
+        printf("Target Ratio Could not be found\nEND\n");
         return 0; //exit early
     }
 
