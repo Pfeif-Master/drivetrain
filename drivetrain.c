@@ -166,8 +166,48 @@ bool calc_drivetrain(double* const targetRatio,
     return haveCurBest;
 }
 
-/* void shift(double* const targetRatio, */
-/*         uint16_t* frontBuff, uint8_t frontLen, */
-/*         uint16_t* rearBuff, uint8_t rearLen, */
-/*         uint16_t* frontPos, uint16_t* rearPos){ */
-/* } */
+void printShift(unsigned int count, uint16_t* f, uint16_t* r){
+    double ratio = (double)*f/(double)*r;
+    printf("%d - f:%d r:%d ratio: %.3f\n",count,*f,*r,ratio);
+}
+
+//front and rear Pos pointers get modified
+void shift(double* const targetRatio,
+        uint16_t* frontBuff, uint8_t frontLen,
+        uint16_t* rearBuff, uint8_t rearLen,
+        uint16_t* frontPos, uint16_t* rearPos){
+    DrivetrainOut_t out;
+    unsigned int count = 1;
+
+    //find optimal gear configuration
+    bool pass = calc_drivetrain(targetRatio, frontBuff, frontLen, rearBuff, rearLen, &out);
+
+    //check that ratio was found
+    if(!pass){
+        printf("Target Ratio Could not be found\nEND");
+        return; //exit early
+    }
+
+    printf("f:%d r: %d ratio: %.3f\n",*out.front, *out.rear, out.ratio);
+
+    //shift front gear
+    while(frontPos != out.front){
+        if(frontPos < out.front){
+            printShift(count++, frontPos++, rearPos);
+        }
+        else{
+            printShift(count++, frontPos--, rearPos);
+        }
+    }
+    //shift rear gear
+    while(rearPos != out.rear){
+        if(rearPos < out.rear){
+            printShift(count++, frontPos, rearPos++);
+        }
+        else{
+            printShift(count++, frontPos, rearPos--);
+        }
+    }
+    //final print
+    printShift(count, frontPos, rearPos);
+}
