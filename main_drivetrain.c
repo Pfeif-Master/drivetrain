@@ -51,16 +51,46 @@ int main(){
         if(!run_test(&far_over, count++)){return 1;}
     }
 
-    {//BST front test
+    {//BST front test sweep rear
         int count = 0;
         uint16_t f[10] = {100, 91, 82, 73, 64, 55, 46, 37, 28, 18}; 
         uint16_t r[5]  = {210, 130, 58, 23, 11};
 
         testCase_t bst = {"BST_F", f, r, 10, 5, &f[7], &r[2], 0, 0};
         int i;
-        for(i = 0; i < 10; i++){
-            bst.target_ratio = calc_ratio(f[5],r[i])+0.0001;
+        for(i = 0; i < 5; i++){
+            bst.target_ratio = calc_ratio(f[5],r[i])+0.001;
             bst.expected_ratio = calc_ratio(f[5],r[i]);
+            if(!run_test(&bst, count++)){return 1;}
+        }
+
+    }
+
+    {//BST front test sweep tree
+        int count = 0;
+        uint16_t f[10] = {100, 91, 82, 73, 64, 55, 46, 37, 28, 18}; 
+        uint16_t r[5]  = {210, 130, 58, 23, 11};
+
+        testCase_t bst = {"BST_F_treeSweep", f, r, 10, 5, &f[7], &r[2], 0, 0};
+        int i;
+        for(i = 0; i < 10; i++){
+            bst.target_ratio = calc_ratio(f[i],r[3])+0.001;
+            bst.expected_ratio = calc_ratio(f[i],r[3]);
+            if(!run_test(&bst, count++)){return 1;}
+        }
+
+    }
+
+    {//BST rear test sweep tree
+        int count = 0;
+        uint16_t f[5]  = {210, 130, 58, 23, 11};
+        uint16_t r[10] = {100, 91, 82, 73, 64, 55, 46, 37, 28, 18}; 
+
+        testCase_t bst = {"BST_R_treeSweep", f, r, 5, 10, &f[0], &r[3], 0, 0};
+        int i;
+        for(i = 0; i < 10; i++){
+            bst.target_ratio = calc_ratio(f[1],r[i])+0.001;
+            bst.expected_ratio = calc_ratio(f[1],r[i]);
             if(!run_test(&bst, count++)){return 1;}
         }
 
