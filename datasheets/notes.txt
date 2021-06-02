@@ -1,0 +1,17 @@
+- know very little about selecting the switch for a switching converter
+- Page 8 of the control unit's data sheet outlines the selection params for the external components
+-"The main selection criteria for
+the power MOSFET are the threshold voltage V GS(TH) and
+the “on” resistance R DS(ON) , reverse transfer capacitance
+and total gate charge."
+- so the minimum voltage to turn on the switch
+- the IRF7202 matches the 70170 at -1.0V
+- the min is -0.5, which to me means the switch might not turn off fully
+- The second bit on R DS(ON) is the resistance across the switch, which I think we want low as possible.
+- the IRF7202 is about 0.25 ohms
+- the NDS9405 is about 0.065 ohms
+- the origninal 70170 is about 0.0.08 ohms
+- So the IRF7202 would have more power loss, driving down the total efficiency of the switching converter.
+=========================
+- Unless after asking a team member about the lower threshold voltage; I would select the IRF7202 even though it has a lower efficiency.
+I'm less worried that it would outright break the circuit.
