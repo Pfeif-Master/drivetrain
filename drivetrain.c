@@ -5,13 +5,18 @@
 
 const double RATIO_MARGIN_OF_ERROR = 0.000001;
 
-//=BST Helper Functions Declaraiton==============================================================================
+//=BST Helper Functions Declaration==============================================================================
+
+/* Nodes for Binary Search tree
+ * stores pointer to elm in gear array
+ */
 typedef struct Node{
     struct Node* leftC;
     struct Node* rightC;
     uint16_t* data;
 }Node_t;
 
+// input param struct for tree traversal
 typedef struct TreeWalker_in{
     Node_t* root;
     double* target_ratio;
@@ -19,18 +24,39 @@ typedef struct TreeWalker_in{
     bool cogISfront;
 }TreeWalker_in_t;
 
+// output param struct for tree traversal
 typedef struct TreeWalker_out{
     double out_ratio;
     uint16_t* out_cog;
     bool success_flag;
 }TreeWalker_out_t;
 
+/* recursive function to convert a sorted descending array
+ * into a BST on the heap.
+ * fist call must have start as 0;
+ * and end as array length - 1 */
 Node_t* sarray2bst(uint16_t* array, int start, int end);
 
+/* deletes a BST created by sarray2bst() off the heap */
 void bst_delete(Node_t* root);
 
+/* recursive part of find_best_ratio()s
+ * walks the BST
+ * fist call must set the in.root to top of BST.
+ * fist call must set out.success_flag = false*/
 void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out);
 
+/* finds a gear in the BST to create the best ratio for a fixed gear.
+ * returns 1 if a valid ratio if found; else returns 0.
+ * haveCurBest => start up var; set false if no valid ratio has been found yet
+ * bst => the BST to search
+ * targetRatio => the target Ratio
+ * in_cog => fixed gear to combine with BST gear in creating ratio; [front | rear] set by cogISfront
+ * cogISfront => true for {in_cog is front; BST is rear}
+ *                false for {in_cog is rear; BST is front
+ * curBest => gets updated if a valid ratio is found, and it is better then current best.
+ *             or set if valid ratio is found and 'haveCurBest' == false
+ */
 unsigned int find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
         uint16_t* const in_cog, const bool cogISfront, DrivetrainOut_t* curBest);
 
@@ -74,12 +100,12 @@ bool drivetrain_calc(double* const targetRatio,
     return haveCurBest > 0;
 }
 
+//helper print function used by drivetrain_shift()
 void printShift(unsigned int count, uint16_t* f, uint16_t* r){
     double ratio = (double)*f/(double)*r;
     printf("%d - f:%d r:%d ratio: %.3f\n",count,*f,*r,ratio);
 }
 
-//front and rear Pos pointers get modified
 double drivetrain_shift(double* const targetRatio,
         uint16_t* frontBuff, uint8_t frontLen,
         uint16_t* rearBuff, uint8_t rearLen,
