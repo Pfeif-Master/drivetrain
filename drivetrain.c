@@ -55,13 +55,15 @@ bool drivetrain_calc(double* const targetRatio,
     //loop through smaller list
     if(cogISfront){
         //loop Front; BST Rear
-        for(uint8_t i = 0; i < frontLen; i++){
+        uint8_t i;
+        for(i = 0; i < frontLen; i++){
             haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
         }
     }
     else{
         //loop Rear; BST Front
-        for(uint8_t i = 0; i < rearLen; i++){
+        uint8_t i;
+        for(i = 0; i < rearLen; i++){
             haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
         }
     }

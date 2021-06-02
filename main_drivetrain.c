@@ -57,7 +57,8 @@ int main(){
         uint16_t r[5]  = {210, 130, 58, 23, 11};
 
         testCase_t bst = {"BST_F", f, r, 10, 5, &f[7], &r[2], 0, 0};
-        for(int i = 0; i < 10; i++){
+        int i;
+        for(i = 0; i < 10; i++){
             bst.target_ratio = calc_ratio(f[5],r[i])+0.0001;
             bst.expected_ratio = calc_ratio(f[5],r[i]);
             if(!run_test(&bst, count++)){return 1;}
@@ -75,7 +76,8 @@ bool run_test(testCase_t* test, int count){
     //Print Params
     printf("\e[36m");
     printf("Front: ");
-    for(int i = 0; i < test->f_size; i++){
+    int i;
+    for(i = 0; i < test->f_size; i++){
         if(&test->front_cogs[i] == test->f_start){
             printf("[%d], ",test->front_cogs[i]);
         }
@@ -84,7 +86,7 @@ bool run_test(testCase_t* test, int count){
         }
     }
     printf("\nRear: ");
-    for(int i = 0; i < test->r_size; i++){
+    for(i = 0; i < test->r_size; i++){
         if(&test->rear_cogs[i] == test->r_start){
             printf("[%d], ",test->rear_cogs[i]);
         }
