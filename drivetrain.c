@@ -31,7 +31,7 @@ void bst_delete(Node_t* root);
 
 void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out);
 
-bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
+unsigned int find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
         uint16_t* const in_cog, const bool cogISfront, DrivetrainOut_t* curBest);
 
 //=Drivetrain============================================================================
@@ -40,7 +40,7 @@ bool drivetrain_calc(double* const targetRatio,
         uint16_t* frontBuff, uint8_t frontLen,
         uint16_t* rearBuff, uint8_t rearLen,
         DrivetrainOut_t* out){
-    bool haveCurBest = false; //set true by inner loop when first valid ratio is found
+    unsigned int haveCurBest = 0; //add 1 by inner loop on valid ratio is found
     Node_t* bst = NULL;
 
     // BST the larger array
@@ -57,21 +57,21 @@ bool drivetrain_calc(double* const targetRatio,
         //loop Front; BST Rear
         uint8_t i;
         for(i = 0; i < frontLen; i++){
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
+            haveCurBest += find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
         }
     }
     else{
         //loop Rear; BST Front
         uint8_t i;
         for(i = 0; i < rearLen; i++){
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
+            haveCurBest += find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
         }
     }
 
     //clean up
     bst_delete(bst);
 
-    return haveCurBest;
+    return haveCurBest > 0;
 }
 
 void printShift(unsigned int count, uint16_t* f, uint16_t* r){
@@ -135,11 +135,24 @@ Node_t* sarray2bst(uint16_t* array, int start, int end){
     root->rightC = NULL;
     root->leftC = NULL;
 
-    //make right
-    root->rightC = sarray2bst(array, mid + 1, end);
-    //make left
-    root->leftC = sarray2bst(array, start, mid - 1);
+    #ifdef DEBUG
+    printf("NODE [%d]\n",array[mid]);
+    #endif
 
+    //make right
+    #ifdef DEBUG
+    printf("left\n");
+    #endif
+    root->leftC = sarray2bst(array, mid + 1, end);
+    //make left
+    #ifdef DEBUG
+    printf("Right\n");
+    #endif
+    root->rightC = sarray2bst(array, start, mid - 1);
+
+    #ifdef DEBUG
+    printf("END\n");
+    #endif
     return root;
 }
 
@@ -162,6 +175,10 @@ void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
         test_ratio = (double)(*in->root->data)/(double)(*in->in_cog);
     }
 
+    #ifdef DEBUG
+    printf("Fixed: %d, BST: %d, ratio:%f\n",*in->in_cog, *in->root->data, test_ratio);
+    #endif
+
     //exit case on perfect
     if(fabs(test_ratio - *(in->target_ratio)) < RATIO_MARGIN_OF_ERROR)
     {
@@ -172,24 +189,47 @@ void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
         return;
     }
 
-    //go right?
-    else if(test_ratio < *in->target_ratio){
+    //Polarity depends on if BST is front or rear gear
+    //if bst is rear and want bigger number: GO LEFT
+    //if bst is front and want smaller number: GO LEFT
+    //else go right
+
+    bool bust = test_ratio > *in->target_ratio;
+    if(!bust){
         //update output with best so far
         out->success_flag = true;
         out->out_cog = in->root->data;
         out->out_ratio = test_ratio;
-        in->root = in->root->rightC;//set next node as right
-        find_best_ratio_helper(in, out); //recurs right
+        #ifdef DEBUG
+        printf("\tSAVE!\n");
+        #endif
     }
-
-    //BUST!; don't update and go left
+    #ifdef DEBUG
     else{
+        printf("\tBUST!\n");
+    }
+    #endif
+
+    //LEFT
+    //  {BST is Rear  AND want bigger} OR {BST is Front AND want smaller}
+    if((in->cogISfront && !bust) || (!in->cogISfront && bust)){
         in->root = in->root->leftC;
+        #ifdef DEBUG
+        printf("\twent left\n");
+        #endif
         find_best_ratio_helper(in, out);
+    }
+    //RIGHT
+    else{
+        in->root = in->root->rightC;//set next node as right
+        #ifdef DEBUG
+        printf("\twent right\n");
+        #endif
+        find_best_ratio_helper(in, out); //recurs right
     }
 }
 
-bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
+unsigned int find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
         uint16_t* const in_cog, const bool cogISfront, DrivetrainOut_t* curBest){
     //set up tree walker
     TreeWalker_in_t in;
@@ -197,6 +237,7 @@ bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
     in.root = bst;
     in.target_ratio = targetRatio;
     in.in_cog = in_cog;
+    in.cogISfront = cogISfront;
     out.success_flag = false;
 
     //walk tree
@@ -204,9 +245,15 @@ bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
     //update best
     if(out.success_flag)
     {
+        #ifdef DEBUG
+        printf("Best: %f\n",out.out_ratio);
+        #endif
         //dont need fabs() because of bust rule
         bool test = (*targetRatio - curBest->ratio) > (*targetRatio - out.out_ratio);
         if(test || !haveCurBest){
+            #ifdef DEBUG
+            printf("Overwrite as new best\n");
+            #endif
             curBest->ratio = out.out_ratio;
             if(cogISfront){
                 curBest->front = in_cog;
@@ -218,7 +265,11 @@ bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
             }
         }
     }
+    #ifdef DEBUG
+    else{printf("ALL BUST\n");}
+    #endif
 
-    return out.success_flag;
+    if(out.success_flag){return 1;}
+    else{return 0;}
 }
 
