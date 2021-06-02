@@ -8,8 +8,9 @@ int main(){
     uint16_t rear_cogs[4] = {28,23,19,16};
     double target_ratio = 1.6;
 
-    DrivetrainOut_t out = calc_drivetrain(target_ratio, front_cogs, 2,
-            rear_cogs, 4);
+    DrivetrainOut_t out;
+    (void)calc_drivetrain(&target_ratio, front_cogs, 2,
+            rear_cogs, 4, &out);
 
-    printf("f:%d r: %d ratio: %.3f\n",out.front, out.rear, out.ratio);
+    printf("f:%d r: %d ratio: %.2f\n",out.front, out.rear, out.ratio);
 }

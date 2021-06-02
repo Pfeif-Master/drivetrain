@@ -1,5 +1,4 @@
 #include "stdlib.h"
-#include "stdbool.h"
 #include "math.h"
 #include "drivetrain.h"
 
@@ -13,15 +12,18 @@ typedef struct Node{
     uint16_t data;
 }Node_t;
 
-typedef struct TreeWalker{
+typedef struct TreeWalker_in{
     Node_t* root;
-    double target_ratio;
-    double out_ratio;
-    uint16_t out_cog;
+    double* target_ratio;
     uint16_t in_cog;
     bool cogISfront;
+}TreeWalker_in_t;
+
+typedef struct TreeWalker_out{
+    double out_ratio;
+    uint16_t out_cog;
     bool success_flag;
-}TreeWalker_t;
+}TreeWalker_out_t;
 
 Node_t* sarray2bst(uint16_t* array, int start, int end){
     //base case
@@ -45,91 +47,95 @@ Node_t* sarray2bst(uint16_t* array, int start, int end){
 void bst_delete(Node_t* root){
     if(root->leftC != NULL){bst_delete(root->leftC);}
     if(root->rightC != NULL){bst_delete(root->rightC);}
+    free(root);
 }
 
 
-void find_best_ratio_helper(TreeWalker_t* meta){
+void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
     //exit case on NULL
-    if(meta->root == NULL){return;}
+    if(in->root == NULL){return;}
 
     //do calc
     double test_ratio; 
-    if(meta->cogISfront){
-        test_ratio = (double)(meta->in_cog)/(double)(meta->root->data);
+    if(in->cogISfront){
+        test_ratio = (double)(in->in_cog)/(double)(in->root->data);
     }
     else{
-        test_ratio = (double)(meta->root->data)/(double)(meta->in_cog);
+        test_ratio = (double)(in->root->data)/(double)(in->in_cog);
     }
 
     //exit case on perfect
-    if(fabs(test_ratio - meta->target_ratio) < RATIO_MARGIN_OF_ERROR)
+    if(fabs(test_ratio - *(in->target_ratio)) < RATIO_MARGIN_OF_ERROR)
     {
         //update and return
-        meta->out_cog = meta->root->data;
-        meta->out_ratio = test_ratio;
+        out->out_cog = in->root->data;
+        out->out_ratio = test_ratio;
+        out->success_flag = true;
         return;
     }
 
     //go right?
-    else if(test_ratio < meta->target_ratio){
+    else if(test_ratio < *(in->target_ratio)){
         //update output with best so far
-        meta->success_flag = true;
-        meta->out_cog = meta->root->data;
-        meta->out_ratio = test_ratio;
-        meta->root = meta->root->rightC;//set next node as right
-        find_best_ratio_helper(meta); //recurs right
+        out->success_flag = true;
+        out->out_cog = in->root->data;
+        out->out_ratio = test_ratio;
+        in->root = in->root->rightC;//set next node as right
+        find_best_ratio_helper(in, out); //recurs right
     }
 
     //BUST!; don't update and go left
     else{
-        meta->root = meta->root->leftC;
-        find_best_ratio_helper(meta);
+        in->root = in->root->leftC;
+        find_best_ratio_helper(in, out);
     }
 }
 
-bool find_best_ratio(Node_t* bst, double* const targetRatio, const uint16_t in_cog, const bool cogISfront, DrivetrainOut_t* curBest){
+bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
+        const uint16_t in_cog, const bool cogISfront, DrivetrainOut_t* curBest){
     //set up tree walker
-    TreeWalker_t meta;
-    meta.root = bst;
-    //FIXME: pase by ref
-    meta.target_ratio = *targetRatio;
-    meta.in_cog = in_cog;
-    meta.success_flag = false;
+    TreeWalker_in_t in;
+    TreeWalker_out_t out;
+    in.root = bst;
+    in.target_ratio = targetRatio;
+    in.in_cog = in_cog;
+    out.success_flag = false;
 
     //walk tree
-    find_best_ratio_helper(&meta);
+    find_best_ratio_helper(&in, &out);
     //update best
-    if(meta.success_flag)
+    if(out.success_flag)
     {
-        //dont need fabs() meta because of bust rule
-        //But do need to check that init best is not a bust
-        if(((*targetRatio - curBest->ratio) > (*targetRatio - meta.out_ratio)) ||
-            curBest->ratio > *targetRatio){
-            curBest->ratio = meta.out_ratio;
+        //dont need fabs() because of bust rule
+        bool test = (*targetRatio - curBest->ratio) > (*targetRatio - out.out_ratio);
+        if(test || !haveCurBest){
+            curBest->ratio = out.out_ratio;
             if(cogISfront){
                 curBest->front = in_cog;
-                curBest->rear = meta.out_cog;
+                curBest->rear = out.out_cog;
             }
             else{
-                curBest->front = meta.out_cog;
+                curBest->front = out.out_cog;
                 curBest->rear = in_cog;
             }
         }
     }
 
-    return meta.success_flag;
+    return out.success_flag;
 }
 
 //=Drivetrain============================================================================
 
 //FIXME: pass by ref
-DrivetrainOut_t calc_drivetrain(double targetRatio,
-       uint16_t* frontBuff, uint8_t frontLen,
-       uint16_t* rearBuff, uint8_t rearLen){
-    // BST the larger array
-    DrivetrainOut_t out = {0,0,0};
-    bool cogISfront = frontLen < rearLen; //will BST larger, and loop on smaller
+bool calc_drivetrain(double* const targetRatio,
+        uint16_t* frontBuff, uint8_t frontLen,
+        uint16_t* rearBuff, uint8_t rearLen,
+        DrivetrainOut_t* out){
+    bool haveCurBest = false; //set true by inner loop when first valid ratio is found
     Node_t* bst = NULL;
+
+    // BST the larger array
+    bool cogISfront = frontLen < rearLen; //will BST larger, and loop on smaller
     if(cogISfront){
         bst = sarray2bst(rearBuff, 0, rearLen - 1); //rear is bigger
     }
@@ -137,35 +143,25 @@ DrivetrainOut_t calc_drivetrain(double targetRatio,
         bst = sarray2bst(frontBuff, 0, frontLen - 1); //front is bigger
     }
 
-    //FIXME; replace with default failing return code
-    //prime the first best ratio
-    if(cogISfront){
-        out.front = frontBuff[0];
-        out.rear  = bst->data;
-    }
-    else{
-        out.front = bst->data;
-        out.rear  = rearBuff[0];
-    }
-    out.ratio = (double)out.front / (double)out.rear;
-
     //loop through smaller list
     if(cogISfront){
+        //loop Front; BST Rear
         for(uint8_t i = 0; i < frontLen; i++){
             //FIXME: get return code
-            find_best_ratio(bst, &targetRatio, frontBuff[i], cogISfront, &out);
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, frontBuff[i], cogISfront, out);
         }
     }
     else{
+        //loop Rear; BST Front
         for(uint8_t i = 0; i < rearLen; i++){
             //FIXME: get return code
-            find_best_ratio(bst, &targetRatio, rearBuff[i], cogISfront, &out);
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, rearBuff[i], cogISfront, out);
         }
     }
 
     //clean up
     bst_delete(bst);
 
-    return out;
+    return haveCurBest;
 }
 

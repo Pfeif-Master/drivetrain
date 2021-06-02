@@ -2,6 +2,7 @@
 #define DRIVETRIAN_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct DrivetrainOut{
     double   ratio;
@@ -9,7 +10,8 @@ typedef struct DrivetrainOut{
     uint16_t rear;
 }DrivetrainOut_t;
 
-DrivetrainOut_t calc_drivetrain(double targetRatio,
-       uint16_t* frontBuff, uint8_t frontLen,
-       uint16_t* rearBuff, uint8_t rearLen);
+bool calc_drivetrain(double* const targetRatio,
+        uint16_t* frontBuff, uint8_t frontLen,
+        uint16_t* rearBuff, uint8_t rearLen,
+        DrivetrainOut_t* out);
 #endif
