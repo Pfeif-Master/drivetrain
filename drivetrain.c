@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "math.h"
+#include "stdio.h"
 #include "drivetrain.h"
 
 const double RATIO_MARGIN_OF_ERROR = 0.000001;
@@ -9,19 +10,19 @@ const double RATIO_MARGIN_OF_ERROR = 0.000001;
 typedef struct Node{
     struct Node* leftC;
     struct Node* rightC;
-    uint16_t data;
+    uint16_t* data;
 }Node_t;
 
 typedef struct TreeWalker_in{
     Node_t* root;
     double* target_ratio;
-    uint16_t in_cog;
+    uint16_t* in_cog;
     bool cogISfront;
 }TreeWalker_in_t;
 
 typedef struct TreeWalker_out{
     double out_ratio;
-    uint16_t out_cog;
+    uint16_t* out_cog;
     bool success_flag;
 }TreeWalker_out_t;
 
@@ -32,7 +33,7 @@ Node_t* sarray2bst(uint16_t* array, int start, int end){
     //make mid root
     uint8_t mid = (start + end) / 2;
     Node_t* root = malloc(sizeof(Node_t));
-    root->data = array[mid];
+    root->data = &(array[mid]);
     root->rightC = NULL;
     root->leftC = NULL;
 
@@ -58,10 +59,10 @@ void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
     //do calc
     double test_ratio; 
     if(in->cogISfront){
-        test_ratio = (double)(in->in_cog)/(double)(in->root->data);
+        test_ratio = (double)(*in->in_cog)/(double)(*in->root->data);
     }
     else{
-        test_ratio = (double)(in->root->data)/(double)(in->in_cog);
+        test_ratio = (double)(*in->root->data)/(double)(*in->in_cog);
     }
 
     //exit case on perfect
@@ -75,7 +76,7 @@ void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
     }
 
     //go right?
-    else if(test_ratio < *(in->target_ratio)){
+    else if(test_ratio < *in->target_ratio){
         //update output with best so far
         out->success_flag = true;
         out->out_cog = in->root->data;
@@ -92,7 +93,7 @@ void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
 }
 
 bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
-        const uint16_t in_cog, const bool cogISfront, DrivetrainOut_t* curBest){
+        uint16_t* const in_cog, const bool cogISfront, DrivetrainOut_t* curBest){
     //set up tree walker
     TreeWalker_in_t in;
     TreeWalker_out_t out;
@@ -148,14 +149,14 @@ bool calc_drivetrain(double* const targetRatio,
         //loop Front; BST Rear
         for(uint8_t i = 0; i < frontLen; i++){
             //FIXME: get return code
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, frontBuff[i], cogISfront, out);
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
         }
     }
     else{
         //loop Rear; BST Front
         for(uint8_t i = 0; i < rearLen; i++){
             //FIXME: get return code
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, rearBuff[i], cogISfront, out);
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
         }
     }
 
@@ -165,3 +166,8 @@ bool calc_drivetrain(double* const targetRatio,
     return haveCurBest;
 }
 
+/* void shift(double* const targetRatio, */
+/*         uint16_t* frontBuff, uint8_t frontLen, */
+/*         uint16_t* rearBuff, uint8_t rearLen, */
+/*         uint16_t* frontPos, uint16_t* rearPos){ */
+/* } */
