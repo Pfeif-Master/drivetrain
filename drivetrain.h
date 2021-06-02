@@ -10,12 +10,12 @@ typedef struct DrivetrainOut{
     uint16_t* rear;
 }DrivetrainOut_t;
 
-bool calc_drivetrain(double* const targetRatio,
+bool drivetrain_calc(double* const targetRatio,
         uint16_t* frontBuff, uint8_t frontLen,
         uint16_t* rearBuff, uint8_t rearLen,
         DrivetrainOut_t* out);
 
-void shift(double* const targetRatio,
+void drivetrain_shift(double* const targetRatio,
         uint16_t* frontBuff, uint8_t frontLen,
         uint16_t* rearBuff, uint8_t rearLen,
         uint16_t* const frontPos, uint16_t* const rearPos);

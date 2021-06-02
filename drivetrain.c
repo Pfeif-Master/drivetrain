@@ -5,8 +5,7 @@
 
 const double RATIO_MARGIN_OF_ERROR = 0.000001;
 
-//=BST=============================================================================
-
+//=BST Helper Functions Declaraiton==============================================================================
 typedef struct Node{
     struct Node* leftC;
     struct Node* rightC;
@@ -25,6 +24,101 @@ typedef struct TreeWalker_out{
     uint16_t* out_cog;
     bool success_flag;
 }TreeWalker_out_t;
+
+Node_t* sarray2bst(uint16_t* array, int start, int end);
+
+void bst_delete(Node_t* root);
+
+void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out);
+
+bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
+        uint16_t* const in_cog, const bool cogISfront, DrivetrainOut_t* curBest);
+
+//=Drivetrain============================================================================
+
+bool drivetrain_calc(double* const targetRatio,
+        uint16_t* frontBuff, uint8_t frontLen,
+        uint16_t* rearBuff, uint8_t rearLen,
+        DrivetrainOut_t* out){
+    bool haveCurBest = false; //set true by inner loop when first valid ratio is found
+    Node_t* bst = NULL;
+
+    // BST the larger array
+    bool cogISfront = frontLen < rearLen; //will BST larger, and loop on smaller
+    if(cogISfront){
+        bst = sarray2bst(rearBuff, 0, rearLen - 1); //rear is bigger
+    }
+    else{
+        bst = sarray2bst(frontBuff, 0, frontLen - 1); //front is bigger
+    }
+
+    //loop through smaller list
+    if(cogISfront){
+        //loop Front; BST Rear
+        for(uint8_t i = 0; i < frontLen; i++){
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
+        }
+    }
+    else{
+        //loop Rear; BST Front
+        for(uint8_t i = 0; i < rearLen; i++){
+            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
+        }
+    }
+
+    //clean up
+    bst_delete(bst);
+
+    return haveCurBest;
+}
+
+void printShift(unsigned int count, uint16_t* f, uint16_t* r){
+    double ratio = (double)*f/(double)*r;
+    printf("%d - f:%d r:%d ratio: %.3f\n",count,*f,*r,ratio);
+}
+
+//front and rear Pos pointers get modified
+void drivetrain_shift(double* const targetRatio,
+        uint16_t* frontBuff, uint8_t frontLen,
+        uint16_t* rearBuff, uint8_t rearLen,
+        uint16_t* frontPos, uint16_t* rearPos){
+    DrivetrainOut_t out;
+    unsigned int count = 1;
+
+    //find optimal gear configuration
+    bool pass = drivetrain_calc(targetRatio, frontBuff, frontLen, rearBuff, rearLen, &out);
+
+    //check that ratio was found
+    if(!pass){
+        printf("Target Ratio Could not be found\nEND");
+        return; //exit early
+    }
+
+    printf("f:%d r: %d ratio: %.3f\n",*out.front, *out.rear, out.ratio);
+
+    //shift front gear
+    while(frontPos != out.front){
+        if(frontPos < out.front){
+            printShift(count++, frontPos++, rearPos);
+        }
+        else{
+            printShift(count++, frontPos--, rearPos);
+        }
+    }
+    //shift rear gear
+    while(rearPos != out.rear){
+        if(rearPos < out.rear){
+            printShift(count++, frontPos, rearPos++);
+        }
+        else{
+            printShift(count++, frontPos, rearPos--);
+        }
+    }
+    //final print
+    printShift(count, frontPos, rearPos);
+}
+
+//=Helper Definitions=====================================================================
 
 Node_t* sarray2bst(uint16_t* array, int start, int end){
     //base case
@@ -50,7 +144,6 @@ void bst_delete(Node_t* root){
     if(root->rightC != NULL){bst_delete(root->rightC);}
     free(root);
 }
-
 
 void find_best_ratio_helper(TreeWalker_in_t* in, TreeWalker_out_t* out){
     //exit case on NULL
@@ -125,89 +218,3 @@ bool find_best_ratio(bool haveCurBest, Node_t* bst, double* const targetRatio,
     return out.success_flag;
 }
 
-//=Drivetrain============================================================================
-
-//FIXME: pass by ref
-bool calc_drivetrain(double* const targetRatio,
-        uint16_t* frontBuff, uint8_t frontLen,
-        uint16_t* rearBuff, uint8_t rearLen,
-        DrivetrainOut_t* out){
-    bool haveCurBest = false; //set true by inner loop when first valid ratio is found
-    Node_t* bst = NULL;
-
-    // BST the larger array
-    bool cogISfront = frontLen < rearLen; //will BST larger, and loop on smaller
-    if(cogISfront){
-        bst = sarray2bst(rearBuff, 0, rearLen - 1); //rear is bigger
-    }
-    else{
-        bst = sarray2bst(frontBuff, 0, frontLen - 1); //front is bigger
-    }
-
-    //loop through smaller list
-    if(cogISfront){
-        //loop Front; BST Rear
-        for(uint8_t i = 0; i < frontLen; i++){
-            //FIXME: get return code
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &frontBuff[i], cogISfront, out);
-        }
-    }
-    else{
-        //loop Rear; BST Front
-        for(uint8_t i = 0; i < rearLen; i++){
-            //FIXME: get return code
-            haveCurBest = find_best_ratio(haveCurBest, bst, targetRatio, &rearBuff[i], cogISfront, out);
-        }
-    }
-
-    //clean up
-    bst_delete(bst);
-
-    return haveCurBest;
-}
-
-void printShift(unsigned int count, uint16_t* f, uint16_t* r){
-    double ratio = (double)*f/(double)*r;
-    printf("%d - f:%d r:%d ratio: %.3f\n",count,*f,*r,ratio);
-}
-
-//front and rear Pos pointers get modified
-void shift(double* const targetRatio,
-        uint16_t* frontBuff, uint8_t frontLen,
-        uint16_t* rearBuff, uint8_t rearLen,
-        uint16_t* frontPos, uint16_t* rearPos){
-    DrivetrainOut_t out;
-    unsigned int count = 1;
-
-    //find optimal gear configuration
-    bool pass = calc_drivetrain(targetRatio, frontBuff, frontLen, rearBuff, rearLen, &out);
-
-    //check that ratio was found
-    if(!pass){
-        printf("Target Ratio Could not be found\nEND");
-        return; //exit early
-    }
-
-    printf("f:%d r: %d ratio: %.3f\n",*out.front, *out.rear, out.ratio);
-
-    //shift front gear
-    while(frontPos != out.front){
-        if(frontPos < out.front){
-            printShift(count++, frontPos++, rearPos);
-        }
-        else{
-            printShift(count++, frontPos--, rearPos);
-        }
-    }
-    //shift rear gear
-    while(rearPos != out.rear){
-        if(rearPos < out.rear){
-            printShift(count++, frontPos, rearPos++);
-        }
-        else{
-            printShift(count++, frontPos, rearPos--);
-        }
-    }
-    //final print
-    printShift(count, frontPos, rearPos);
-}
